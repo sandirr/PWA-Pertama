@@ -5,7 +5,7 @@ $(document).ready(function () {
     var catResults = ''
     var categories = []
 
-    $.get(_url, function (data) {
+    function renderPage(data) {
 
         $.each(data, function (key, items) {
             dataResults += "<div>" +
@@ -18,13 +18,40 @@ $(document).ready(function () {
                 catResults += "<option value='" + items.category + "''>" + items
                     .category + "</option>"
             }
-        });
+        })
 
         $('#products').html(dataResults)
         $('#cat_select').html("<option value='all'>All</option>" + catResults)
+    }
+
+    var networkDateReceived = false
+
+    // fresh data when online
+    var networkUpdate = fetch(_url).then(function (response) {
+        return response.json()
+    }).then(function (data) {
+        networkDataReceived = true
+        renderPage(data)
+    })
 
 
-    });
+    // return data from cahce
+    caches.match(_url).then(function (response) {
+        if (!response) throw Error('no data on cache')
+        return response.json()
+    }).then(function (data) {
+        if (!networkDataReceived) {
+            renderPage(data)
+            console.log('render data from cache')
+        }
+    }).catch(function () {
+        return networkUpdate
+    })
+
+
+
+
+
 
     // filtering
     $('#cat_select').on('change', function () {
